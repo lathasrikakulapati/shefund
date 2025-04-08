@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Investor Login</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="form-container">
+    <h2>Investor Login</h2>
+    <form id="loginForm">
+      <input type="email" name="email" placeholder="Email" required />
+      <input type="password" name="password" placeholder="Password" required />
+      <button type="submit">Login</button>
+    </form>
+
+    <p id="message"></p>
+    <p class="login-link">Don't have an account? <a href="investor_register.html">Register here</a></p>
+  </div>
+
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(e.target);
+      const email = formData.get("email");
+      const password = formData.get("password");
+
+      const res = await fetch("/api/investor/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+      const messageElem = document.getElementById("message");
+
+      if (res.ok) {
+        // Store as 'email' to match investor_dashboard.html logic
+        localStorage.setItem("email", email);  
+        messageElem.style.color = "green";
+        messageElem.innerText = "Login successful! Redirecting...";
+        setTimeout(() => {
+          window.location.href = "investor_dashboard.html";
+        }, 1000);
+      } else {
+        messageElem.style.color = "red";
+        messageElem.innerText = data.error || "Login failed";
+      }
+    });
+  </script>
+</body>
+</html>

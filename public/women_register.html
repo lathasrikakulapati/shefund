@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Women Registration</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="form-container">
+    <h2>Women Registration</h2>
+    <form id="registerForm">
+      <input type="text" placeholder="Name" name="name" required />
+      <input type="email" placeholder="Email" name="email" required />
+      <input type="password" placeholder="Password" name="password" required />
+      <button type="submit">Register</button>
+    </form>
+
+    <p id="message"></p>
+
+    <p class="login-link">Already have an account? <a href="women_login.html">Login here</a></p>
+  </div>
+
+  <script>
+    document.getElementById("registerForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(e.target);
+      const name = formData.get("name");
+      const email = formData.get("email");
+      const password = formData.get("password");
+
+      const res = await fetch("/api/women/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password })
+      });
+
+      const data = await res.json();
+      const messageElem = document.getElementById("message");
+
+      if (res.status === 201) {
+        messageElem.style.color = "green";
+        messageElem.innerText = data.message;
+        setTimeout(() => window.location.href = "women_login.html", 1500);
+      } else {
+        messageElem.style.color = "red";
+        messageElem.innerText = data.message || "Registration failed";
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Investor Dashboard - SheFund</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .dashboard {
+      max-width: 800px;
+      margin: 30px auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    .loan-box {
+      background-color: #fff;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 10px;
+      border-left: 5px solid #4CAF50;
+    }
+    button {
+      padding: 8px 15px;
+      margin-top: 5px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #388E3C;
+    }
+    h2, h3 {
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <button onclick="logout()" style="float:right;">Logout</button>
+    <h2>Welcome, Investor</h2>
+
+    <!-- Pending Loans Section -->
+    <section>
+      <h3>Pending Loan Applications</h3>
+      <div id="pending-loans">Loading...</div>
+    </section>
+
+    <hr />
+
+    <!-- Funded Loans Section -->
+    <section>
+      <h3>Your Funded Loans</h3>
+      <div id="my-loans">Loading...</div>
+    </section>
+  </div>
+
+  <script>
+    const investorEmail = localStorage.getItem("email");
+
+    if (!investorEmail) {
+      alert("You must be logged in.");
+      window.location.href = "investor_login.html";
+    }
+
+    // Fetch pending loans
+    function loadPendingLoans() {
+      fetch("/api/investor/pending-loans")
+        .then(res => res.json())
+        .then(data => {
+          const container = document.getElementById("pending-loans");
+          if (!Array.isArray(data) || data.length === 0) {
+            container.innerHTML = "<p>No pending loan requests.</p>";
+            return;
+          }
+
+          container.innerHTML = data.map(loan => `
+            <div class="loan-box">
+              <p><strong>${loan.woman_email}</strong> - ₹${loan.loan_amount}</p>
+              <p><em>${loan.description}</em></p>
+              <button onclick="fundLoan('${loan._id}')">Fund Loan</button>
+            </div>
+          `).join('');
+        })
+        .catch(() => {
+          document.getElementById("pending-loans").innerText = "Failed to load loans.";
+        });
+    }
+
+    // Fetch funded loans by this investor
+    function loadMyLoans() {
+      fetch(`/api/investor/my-loans?email=${investorEmail}`)
+        .then(res => res.json())
+        .then(data => {
+          const container = document.getElementById("my-loans");
+          if (!Array.isArray(data) || data.length === 0) {
+            container.innerHTML = "<p>You haven't funded any loans yet.</p>";
+            return;
+          }
+
+          container.innerHTML = data.map(loan => `
+            <div class="loan-box">
+              <p><strong>${loan.woman_email}</strong> - ₹${loan.loan_amount}</p>
+              <p><strong>Status:</strong> ${loan.status}</p>
+            </div>
+          `).join('');
+        })
+        .catch(() => {
+          document.getElementById("my-loans").innerText = "Failed to load funded loans.";
+        });
+    }
+
+    // Fund a loan
+    function fundLoan(loanId) {
+      fetch("/api/investor/fund", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          loanId,
+          investor_email: investorEmail
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        alert(data.message || "Loan funded successfully.");
+        loadPendingLoans(); // Refresh pending
+        loadMyLoans();      // Refresh funded
+      })
+      .catch(() => alert("Failed to fund loan."));
+    }
+
+    // Logout
+    function logout() {
+      localStorage.removeItem("email");
+      window.location.href = "index.html";
+    }
+
+    // Initial Load
+    loadPendingLoans();
+    loadMyLoans();
+  </script>
+</body>
+</html>

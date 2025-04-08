@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Women Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="dashboard">
+    <button onclick="logout()" style="float: right;">Logout</button>
+    <h2>Welcome, Entrepreneur</h2>
+
+    <!-- Section: Apply for Loan -->
+    <section>
+      <h3>Apply for a Loan</h3>
+      <form id="loanForm">
+        <input type="number" name="amount" placeholder="Loan Amount" required />
+        <textarea name="description" placeholder="Loan Description" required></textarea>
+        <button type="submit">Submit Application</button>
+      </form>
+    </section>
+
+    <hr>
+
+    <!-- Section: View My Loan Applications -->
+    <section>
+      <h3>Your Loan Applications</h3>
+      <div id="my-loans">Loading...</div>
+    </section>
+  </div>
+
+  <script>
+    // ✅ Use the correct localStorage key
+    const email = localStorage.getItem("womenEmail");
+
+    if (!email) {
+      alert("Please log in first.");
+      window.location.href = "women_login.html";
+    }
+
+    // ✅ Submit Loan Form
+    document.getElementById("loanForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(e.target);
+    const amount = formData.get("amount");
+    const description = formData.get("description");
+
+    try {
+      const res = await fetch("http://localhost:5000/api/women/request-loan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, amount, description })  // ✅ THIS LINE
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert("Loan application submitted successfully!");
+        e.target.reset();
+        loadMyLoans();
+      } else {
+        alert(data.error || "Failed to submit loan application.");
+      }
+    } catch (err) {
+      alert("Error submitting loan. Check console.");
+      console.error("Submit error:", err);
+    }
+  });
+
+    // ✅ Load Loans
+    async function loadMyLoans() {
+      try {
+        const res = await fetch(`http://localhost:5000/api/women/my-loans?email=${email}`);
+        const data = await res.json();
+
+        const container = document.getElementById("my-loans");
+        if (!Array.isArray(data) || data.length === 0) {
+          container.innerHTML = "<p>You haven’t applied for any loans yet.</p>";
+          return;
+        }
+
+        container.innerHTML = data.map(loan => `
+          <div class="loan-box">
+            <p><strong>Amount:</strong> ₹${loan.loan_amount}</p>
+            <p><strong>Description:</strong> ${loan.description}</p>
+            <p><strong>Status:</strong> ${loan.status}</p>
+            <hr/>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error("Error loading loans:", err);
+        document.getElementById("my-loans").innerText = "Failed to load your loan applications.";
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem("womenEmail");
+      window.location.href = "index.html";
+    }
+
+    // Initial Load
+    loadMyLoans();
+  </script>
+
+</body>
+</html>
